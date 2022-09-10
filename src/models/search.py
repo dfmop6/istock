@@ -17,26 +17,23 @@ class Dimension:
 
 @dataclass
 class Text:
-    title: str
-    shortTitle: str
-    caption: str
-    seo_title: str
-    seo_caption: str
-    description: str  # altText
-
-
-class ImageRequest(BaseModel):
-    query: str
-    page: int
-    language: Optional[str] = "en"
+    title: Optional[str]
+    caption: Optional[str]
+    description: Optional[str]
 
 
 @dataclass
 class SearchMetadata:
     title: str
     description: Optional[str]
-    canonical_url: Optional[str]
-    hero_image: Optional[str]
+    canonicalUrl: Optional[str]
+    heroImage: Optional[str]
+
+
+class SearchRequest(BaseModel):
+    query: str
+    page: int
+    language: Optional[str] = "en"
 
 
 class Image(BaseModel):
@@ -56,12 +53,12 @@ class Image(BaseModel):
 
 
 class Search(BaseModel):
-    results: list[Image]
+    results: Optional[list[Image]]
     total_number_of_results: Optional[int]
-    related_terms: list[Optional[str]]
+    related_terms: Optional[list[str]]
     search_metadata: Optional[SearchMetadata]
 
-    def get_search_images(self, reqt: ImageRequest):
+    def get_search_images(self, reqt: SearchRequest):
         url = f"https://www.istockphoto.com/{reqt.language}/search/2/image?phrase={reqt.query}&page={reqt.page}"
 
         headers = {
@@ -107,16 +104,14 @@ class Search(BaseModel):
                     height=asset.get("maxDimensions", {}).get("height"),
                 ),
                 text=Text(
-                    title=asset.get("text", {}).get("title"),
-                    shortTitle=asset.get("text", {}).get("shortTitle"),
-                    caption=asset.get("text", {}).get("caption"),
-                    seo_title=asset.get("text", {}).get("seoTitle"),
-                    seo_caption=asset.get("text", {}).get("seoCaption"),
-                    description=asset.get("text", {}).get("altText"),
+                    title=asset.get("title"),
+                    caption=asset.get("caption"),
+                    description=asset.get("altText"),
                 ),
             )
             for asset in assets
         ]
-        self.total_number_of_results = data["total_number_of_results"]
-        self.related_terms = data["related_terms"]
-        self.search_metadata = SearchMetadata(**data.get("pageMetaData", {}))
+        self.total_number_of_results = data["totalNumberOfResults"]
+        self.related_terms = data["relatedTerms"]
+        metadata = data.get("pageMetaData", {})
+        self.search_metadata = SearchMetadata(**metadata)
